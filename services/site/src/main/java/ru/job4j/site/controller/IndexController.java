@@ -6,11 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import ru.job4j.site.dto.ProfileDTO;
+import ru.job4j.site.dto.*;
 import ru.job4j.site.service.*;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +27,7 @@ public class IndexController {
     private final AuthService authService;
     private final ProfilesService profilesService;
     private final NotificationService notifications;
+    private final TopicsService topicsService;
 
     @GetMapping({"/", "index"})
     public String getIndexPage(Model model, HttpServletRequest req) throws JsonProcessingException {
@@ -32,7 +35,20 @@ public class IndexController {
                 "Главная", "/"
         );
         try {
-            model.addAttribute("categories", categoriesService.getMostPopular());
+            List<CategoryDTO> categories = categoriesService.getMostPopular();
+            model.addAttribute("categories", categories);
+            List<Integer> newInterviews = new ArrayList<>(categories.size());
+            for (CategoryDTO category : categories) {
+                int newCount = 0;
+                for (TopicIdNameDTO topic : topicsService.getTopicIdNameDtoByCategory(category.getId())) {
+                    newCount = Math.toIntExact(interviewsService.getByTopicId(topic.getId(), 0, 20).stream().filter(x -> {
+                        return LocalDateTime.parse(x.getCreateDate(), DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                                .isAfter(LocalDateTime.now().minusDays(3));
+                    }).count());
+                }
+                newInterviews.add(newCount);
+            }
+            model.addAttribute("categories_newCount", newInterviews);
             var token = getToken(req);
             if (token != null) {
                 var userInfo = authService.userInfo(token);

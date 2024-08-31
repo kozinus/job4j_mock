@@ -56,7 +56,7 @@ class IndexControllerTest {
     @BeforeEach
     void initTest() {
         this.indexController = new IndexController(
-                categoriesService, interviewsService, authService, profilesService, notificationService
+                categoriesService, interviewsService, authService, profilesService, notificationService, topicsService
         );
     }
 
