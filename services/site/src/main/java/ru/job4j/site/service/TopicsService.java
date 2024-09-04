@@ -9,8 +9,7 @@ import ru.job4j.site.dto.TopicDTO;
 import ru.job4j.site.dto.TopicLiteDTO;
 import ru.job4j.site.dto.TopicIdNameDTO;
 
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class TopicsService {
@@ -77,5 +76,18 @@ public class TopicsService {
         var mapper = new ObjectMapper();
         return mapper.readValue(text, new TypeReference<>() {
         });
+    }
+
+    public Map<Integer, List<TopicIdNameDTO>> getTopicIdsNameDtoByCategories(List<Integer> categoryIds)
+            throws JsonProcessingException {
+        Map<Integer, List<TopicIdNameDTO>> topics = new HashMap<>();
+        categoryIds.forEach(x -> {
+            try {
+                topics.put(x, getTopicIdNameDtoByCategory(x));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return topics;
     }
 }

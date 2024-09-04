@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static ru.job4j.site.controller.RequestResponseTools.getToken;
 
@@ -38,14 +41,15 @@ public class IndexController {
             List<CategoryDTO> categories = categoriesService.getMostPopular();
             model.addAttribute("categories", categories);
             List<Integer> newInterviews = new ArrayList<>(categories.size());
+            Map<Integer, List<TopicIdNameDTO>> topicsByCategoriesId = topicsService.getTopicIdsNameDtoByCategories(
+                    categories.stream().map(CategoryDTO::getId).collect(Collectors.toList()));
+
             for (CategoryDTO category : categories) {
-                int newCount = 0;
-                for (TopicIdNameDTO topic : topicsService.getTopicIdNameDtoByCategory(category.getId())) {
-                    newCount = Math.toIntExact(interviewsService.getByTopicId(topic.getId(), 0, 20).stream().filter(x -> {
-                        return LocalDateTime.parse(x.getCreateDate(), DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-                                .isAfter(LocalDateTime.now().minusDays(3));
-                    }).count());
-                }
+                int newCount = Math.toIntExact(interviewsService.getByTopicsIds(
+                        topicsByCategoriesId.get(category.getId()).stream()
+                                .map(TopicIdNameDTO::getId).collect(Collectors.toList()), 0, 1000)
+                        .stream().filter(x -> LocalDateTime.parse(x.getCreateDate(), DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                                .isAfter(LocalDateTime.now().minusDays(3))).count());
                 newInterviews.add(newCount);
             }
             model.addAttribute("categories_newCount", newInterviews);
